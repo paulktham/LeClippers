@@ -5,30 +5,25 @@ import TimingList from "../components/TimingList";
 
 const Home = ({
   file,
-  handleFileChange,
-  handleClearFile,
+  setFile,
   inputs,
-  handleInputChange,
-  addInputs,
-  removeInputs,
+  setInputs,
   handleSubmission,
   navigate,
+  stackedVideo,
+  isProcessing, // Add this line
 }) => {
   return (
     <div>
       <Header />
-      <UploadFile
-        file={file}
-        handleFileChange={handleFileChange}
-        handleClearFile={handleClearFile}
-      />
+      <UploadFile file={file} setFile={setFile} />
       <TimingList
         inputs={inputs}
-        handleInputChange={handleInputChange}
-        addInputs={addInputs}
-        removeInputs={removeInputs}
+        setInputs={setInputs}
         handleSubmission={handleSubmission}
         navigate={navigate}
+        stackedVideo={stackedVideo}
+        isProcessing={isProcessing} // Pass it to TimingList
       />
     </div>
   );

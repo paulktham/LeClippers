@@ -1,7 +1,18 @@
 import React, { useRef } from "react";
 
-const UploadFile = ({ file, handleFileChange, handleClearFile }) => {
+const UploadFile = ({ file, setFile }) => {
   const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile.name);
+    }
+  };
+
+  const handleClearFile = () => {
+    setFile(null);
+  };
 
   const handleClear = () => {
     handleClearFile();
@@ -10,27 +21,41 @@ const UploadFile = ({ file, handleFileChange, handleClearFile }) => {
 
   return (
     <div className="w-full min-h-screen bg-white items-center justify-center flex">
-      <div className="w-[24%] h-auto rounded-md bg-white shadow-md border border-slate-400 p-5">
+      <div className="w-auto h-auto rounded-md bg-white shadow-md border border-slate-400 p-5 flex items-center justify-center flex-col">
         <label
           htmlFor="fileInput"
           className="block text-slate-800 text-base font-medium mb-1.5"
         >
           Upload File
         </label>
-        <div className="flex items-start w-full">
-          <input
-            id="fileInput"
-            type="file"
-            onChange={handleFileChange}
-            ref={fileInputRef}
-          />
+        {file && (
+          <video controls width="80%" src={URL.createObjectURL(file)}></video>
+        )}
+        <div className="flex flex-col w-full justify-center items-center">
+          {file == null && (
+            <input
+              id="fileInput"
+              type="file"
+              onChange={(e) => setFile(e.target.files?.item(0))}
+              ref={fileInputRef}
+            />
+          )}
+
           {file && (
-            <button onClick={handleClear} className="ml-2">
-              Clear
-            </button>
+            <>
+              <div>{file.name}</div>
+              <div>
+                <button
+                  onClick={handleClear}
+                  className="ml-2 border-2 border-black p-2 m-2 rounded-md bg-slate-400"
+                >
+                  Clear Video
+                </button>
+              </div>
+            </>
           )}
         </div>
-        {file && <div className="mt-2">Selected File: {file}</div>}
+        {/* {file && <div className="mt-2">Selected File: {file}</div>} */}
       </div>
     </div>
   );

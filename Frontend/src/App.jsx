@@ -8,7 +8,7 @@ import {
   Route,
   useNavigate,
 } from "react-router-dom";
-import backgroundVideo from "./assets/randomvid.mp4";
+// import backgroundVideo from "./assets/randomvid.mp4";
 import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 const ffmpeg = createFFmpeg({ log: true });
 
@@ -24,13 +24,13 @@ const App = () => {
 
   const handleSubmission = async () => {
     setInputs([{ start: "", end: "" }]);
-    if (file) {
-      setIsProcessing(true);
-      console.log("Starting video processing...");
-      await stackVideos(file, backgroundVideo);
-      console.log("Video processing completed.");
-      setIsProcessing(false);
-    }
+    // if (file) {
+    //   setIsProcessing(true);
+    //   console.log("Starting video processing...");
+    //   await stackVideos(file, backgroundVideo);
+    //   console.log("Video processing completed.");
+    //   setIsProcessing(false);
+    // }
   };
 
   const load = async () => {

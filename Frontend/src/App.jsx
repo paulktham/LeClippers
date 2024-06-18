@@ -2,6 +2,12 @@ import "./App.css";
 import React, { useState, useEffect } from "react";
 import Download from "./pages/Download";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Header from "./components/Header";
+import Register from "./pages/Register";
+import { db } from "./firebase/firebase";
+import { getDoc, doc, setDoc } from "firebase/firestore";
+import { useAuth } from "./context/authContext";
 import {
   BrowserRouter as Router,
   Routes,
@@ -21,17 +27,6 @@ const App = () => {
   const [isProcessing, setIsProcessing] = useState(false); // Add state for processing status
 
   const navigate = useNavigate();
-
-  const handleSubmission = async () => {
-    setInputs([{ start: "", end: "" }]);
-    // if (file) {
-    //   setIsProcessing(true);
-    //   console.log("Starting video processing...");
-    //   await stackVideos(file, backgroundVideo);
-    //   console.log("Video processing completed.");
-    //   setIsProcessing(false);
-    // }
-  };
 
   const load = async () => {
     try {
@@ -87,6 +82,50 @@ const App = () => {
       console.error("Error during video processing:", error);
       setError(error.message);
       setIsProcessing(false); // Ensure to reset processing state in case of error
+
+  const { userLoggedIn, currentUser } = useAuth();
+  const [credits, setCredits] = useState(0);
+
+  useEffect(() => {
+    const fetchUserCredits = async () => {
+      if (currentUser) {
+        // Ensure currentUser is available
+        try {
+          const userDocRef = doc(db, "user", currentUser.email);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            setCredits(userDoc.data().credits);
+          }
+        } catch (err) {
+          console.error("Error fetching user credits:", err);
+        }
+      }
+    };
+
+    fetchUserCredits();
+  }, [currentUser]);
+
+  const handleSubmission = async () => {
+    // if (file) {
+    //   setIsProcessing(true);
+    //   console.log("Starting video processing...");
+    //   await stackVideos(file, backgroundVideo);
+    //   console.log("Video processing completed.");
+    //   setIsProcessing(false);
+    // }
+    // Subtract 3 from the current credits
+    const updatedCredits = credits - 3;
+
+    // Update the user's credits in Firestore
+    try {
+      const userDocRef = doc(db, "user", currentUser.email);
+      await setDoc(userDocRef, { credits: updatedCredits }, { merge: true }); // Merge is set to true to update only the credits field
+      // Update the local state with the new credits
+      setCredits(updatedCredits);
+      // Other submission logic
+      setInputs([{ start: "", end: "" }]);
+    } catch (error) {
+      console.error("Error updating user credits:", error);
     }
   };
 
@@ -104,10 +143,13 @@ const App = () => {
             navigate={navigate}
             stackedVideo={stackedVideo}
             isProcessing={isProcessing} // Pass the processing status
+            credits={credits}
           />
         }
       />
       <Route path="/download" element={<Download />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
     </Routes>
   ) : (
     <p>Loading...</p>

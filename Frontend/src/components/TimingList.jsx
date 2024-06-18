@@ -10,7 +10,9 @@ const TimingList = ({
 }) => {
   const onSubmit = () => {
     handleSubmission();
+
     // navigate("/download");
+
   };
 
   const addInputs = () => {

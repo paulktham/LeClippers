@@ -1,8 +1,18 @@
 import React from "react";
 
-const TimingList = ({ inputs, setInputs, handleSubmission, navigate }) => {
+const TimingList = ({
+  inputs,
+  setInputs,
+  handleSubmission,
+  navigate,
+  stackedVideo,
+  isProcessing, // Add this line
+}) => {
   const onSubmit = () => {
     handleSubmission();
+
+    // navigate("/download");
+
   };
 
   const addInputs = () => {
@@ -54,7 +64,12 @@ const TimingList = ({ inputs, setInputs, handleSubmission, navigate }) => {
         </div>
       ))}
       <div className="flex justify-evenly">
-        <button onClick={onSubmit}>Submit</button>
+        <button onClick={onSubmit} disabled={isProcessing}>
+          {" "}
+          {/* Disable button while processing */}
+          {isProcessing ? "Processing..." : "Submit"}
+        </button>
+        {stackedVideo && <video controls src={stackedVideo}></video>}
       </div>
     </div>
   );

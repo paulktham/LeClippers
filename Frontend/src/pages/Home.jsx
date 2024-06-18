@@ -12,6 +12,8 @@ const Home = ({
   setInputs,
   handleSubmission,
   navigate,
+  stackedVideo,
+  isProcessing, // Add this line
   credits,
 }) => {
   const { userLoggedIn } = useAuth(); // Use the hook to get the userLoggedIn state
@@ -29,6 +31,8 @@ const Home = ({
         setInputs={setInputs}
         handleSubmission={handleSubmission}
         navigate={navigate}
+        stackedVideo={stackedVideo}
+        isProcessing={isProcessing} // Pass it to TimingList
       />
     </div>
   );

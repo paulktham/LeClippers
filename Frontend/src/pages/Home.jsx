@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import UploadFile from "../components/UploadFile";
 import TimingList from "../components/TimingList";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/authContext"; // Import the useAuth hook
+import { useAuth } from "../context/authContext";
 
 const Home = ({
   file,
@@ -13,10 +13,25 @@ const Home = ({
   handleSubmission,
   navigate,
   stackedVideo,
-  isProcessing, // Add this line
+  isProcessing,
   credits,
 }) => {
-  const { userLoggedIn } = useAuth(); // Use the hook to get the userLoggedIn state
+  const { userLoggedIn } = useAuth();
+  const [videoDuration, setVideoDuration] = useState(null);
+
+  useEffect(() => {
+    if (file) {
+      const video = document.createElement("video");
+      video.src = URL.createObjectURL(file);
+      video.onloadedmetadata = () => {
+        setVideoDuration(video.duration);
+      };
+      video.onerror = (error) => {
+        console.error("Error loading video: ", error);
+        setVideoDuration(null);
+      };
+    }
+  }, [file]);
 
   if (!userLoggedIn) {
     return <Navigate to="/login" replace={true} />;
@@ -32,7 +47,8 @@ const Home = ({
         handleSubmission={handleSubmission}
         navigate={navigate}
         stackedVideo={stackedVideo}
-        isProcessing={isProcessing} // Pass it to TimingList
+        isProcessing={isProcessing}
+        videoDuration={videoDuration}
       />
     </div>
   );

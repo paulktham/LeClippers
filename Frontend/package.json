@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@ffmpeg/core": "^0.9.0",
-    "@ffmpeg/ffmpeg": "^0.9.8",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "antd": "^5.18.3",
     "artisan": "^0.1.2",
     "firebase": "^10.12.2",
+    "rc-slider": "^10.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1"

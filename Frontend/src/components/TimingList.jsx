@@ -1,47 +1,66 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 const TimingList = ({
   inputs,
   setInputs,
   handleSubmission,
-  navigate,
   stackedVideo,
-  isProcessing, // Add this line
+  isProcessing,
+  videoDuration,
 }) => {
-  const onSubmit = () => {
-    handleSubmission();
+  const onSubmit = useCallback(() => {
+    if (
+      inputs.every(
+        (input) => validateTime(input.start) && validateTime(input.end)
+      )
+    ) {
+      handleSubmission();
+    } else {
+      alert("Please enter valid times within the video duration.");
+    }
+  }, [inputs, handleSubmission]);
 
-    // navigate("/download");
+  const addInputs = useCallback(() => {
+    setInputs((prevInputs) => [...prevInputs, { start: "", end: "" }]);
+  }, [setInputs]);
 
-  };
+  const removeInputs = useCallback(
+    (index) => {
+      setInputs((prevInputs) => prevInputs.filter((_, i) => i !== index));
+    },
+    [setInputs]
+  );
 
-  const addInputs = () => {
-    setInputs([...inputs, { start: "", end: "" }]);
-  };
+  const handleInputChange = useCallback(
+    (index, event) => {
+      const { name, value } = event.target;
+      setInputs((prevInputs) => {
+        const newInputs = [...prevInputs];
+        newInputs[index] = { ...newInputs[index], [name]: value };
+        return newInputs;
+      });
+    },
+    [setInputs]
+  );
 
-  const removeInputs = (index) => {
-    const newInputs = inputs.filter((_, i) => i !== index);
-    setInputs(newInputs);
-  };
-
-  const handleInputChange = (index, event) => {
-    const { name, value } = event.target;
-    setInputs((prevInputs) => {
-      const newInputs = [...prevInputs];
-      newInputs[index] = { ...newInputs[index], [name]: value };
-      return newInputs;
-    });
-  };
+  const validateTime = useCallback(
+    (time) => {
+      const [minutes, seconds] = time.split(":").map(Number);
+      const totalSeconds = minutes * 60 + seconds;
+      return totalSeconds <= videoDuration;
+    },
+    [videoDuration]
+  );
 
   return (
-    <div className="bg-gray p-2 border border-red-50 flex justify-between bg-red-600 flex-col">
+    <div className="bg-gray p-2 border border-red-50 flex justify-between bg-red-600 flex-col items-center">
       <div>
         <p>timestamps:</p>
       </div>
       {inputs.map((input, index) => (
-        <div key={index}>
+        <div key={index} className="flex items-center space-x-2">
           <input
-            type="time"
+            type="text"
             name="start"
             value={input.start}
             onChange={(e) => handleInputChange(index, e)}
@@ -50,7 +69,7 @@ const TimingList = ({
           />
           -
           <input
-            type="time"
+            type="text"
             name="end"
             value={input.end}
             onChange={(e) => handleInputChange(index, e)}
@@ -64,9 +83,7 @@ const TimingList = ({
         </div>
       ))}
       <div className="flex justify-evenly">
-        <button onClick={onSubmit} disabled={isProcessing}>
-          {" "}
-          {/* Disable button while processing */}
+        <button onClick={onSubmit} disabled={isProcessing || !videoDuration}>
           {isProcessing ? "Processing..." : "Submit"}
         </button>
         {stackedVideo && <video controls src={stackedVideo}></video>}

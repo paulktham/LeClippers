@@ -3,45 +3,26 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
-const multer = require("multer");
 const fs = require("fs");
-const { Storage } = require("@google-cloud/storage");
+const multer = require("multer");
+const app = express();
+const port = 5000;
+
 const serviceAccount = require("./assets/leclippers1-firebase-adminsdk-7l1br-c93d999ed1.json");
 
-// Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: "leclippers1.appspot.com",
-  });
-}
-
-const app = express();
-const port = process.env.PORT || 5000;
-
-// Middleware for handling CORS
-const corsOptions = {
-  origin: "https://leclippers.vercel.app", // Replace with your frontend URL
-  methods: ["POST", "GET", "OPTIONS"],
-  allowedHeaders: ["Content-Type"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.options("/process-video", cors());
-
-app.use(express.json({ limit: "1gb" }));
-app.use(express.urlencoded({ limit: "1gb", extended: true }));
-
-// Initialize Google Cloud Storage
-const storage = new Storage({
-  projectId: "leclippers1",
-  keyFilename: "./assets/leclippers1-firebase-adminsdk-7l1br-c93d999ed1.json",
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: "leclippers1.appspot.com",
 });
-const bucket = storage.bucket("leclippers1.appspot.com");
 
-// Configure multer to use memory storage
-const upload = multer({ storage: multer.memoryStorage() });
+const bucket = admin.storage().bucket();
+
+const upload = multer({ dest: "uploads/" }); // Store uploaded files in the uploads directory
+
+app.use(cors());
+app.use(express.json());
+
+app.use("/videos", express.static(path.join(__dirname, "videos")));
 
 app.get("/", (req, res) => {
   res.send("Hello from Express!");
@@ -58,38 +39,35 @@ app.post("/verifyToken", async (req, res) => {
 });
 
 app.post("/process-video", upload.single("video"), async (req, res) => {
-  const { start, end } = req.body;
-  const startParts = start.split(":").map(Number);
-  const endParts = end.split(":").map(Number);
-
-  const startSeconds = startParts[0] * 60 + (startParts[1] || 0);
-  const endSeconds = endParts[0] * 60 + (endParts[1] || 0);
-
-  const duration = endSeconds - startSeconds;
-
-  if (duration <= 0) {
-    return res
-      .status(400)
-      .json({ error: "End time must be greater than start time" });
-  }
-
-  const video1Buffer = req.file.buffer;
-  const video1Path = path.join("/tmp", req.file.originalname);
-
-  // Write the uploaded video to a temporary file
-  await fs.promises.writeFile(video1Path, video1Buffer);
-
-  const video2Path = path.join(__dirname, "videos", "video2.mp4");
-  const outputPath = path.join("/tmp", "output1.mp4");
-
   try {
-    // Download the second video from Google Cloud Storage to a temporary path
-    await bucket.file("video2.mp4").download({ destination: video2Path });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-    // Process the video with ffmpeg
-    ffmpeg(video1Path)
-      .inputOptions([`-ss ${startSeconds}`, `-t ${duration}`])
-      .input(video2Path)
+    const { start, end } = req.body;
+    const startParts = start.split(":").map(Number);
+    const endParts = end.split(":").map(Number);
+
+    const startSeconds = startParts[0] * 60 + (startParts[1] || 0);
+    const endSeconds = endParts[0] * 60 + (endParts[1] || 0);
+
+    const duration = endSeconds - startSeconds;
+
+    if (duration <= 0) {
+      return res
+        .status(400)
+        .json({ error: "End time must be greater than start time" });
+    }
+
+    // Proceed with ffmpeg processing using req.file.path
+    const videoPath = req.file.path;
+    const video2Path = path.join(__dirname, "videos", "video2.mp4");
+    const outputPath = path.join(__dirname, "videos", "output1.mp4");
+
+    // Example ffmpeg command
+    ffmpeg(videoPath)
+      .inputOptions(["-ss 0", "-t 1"])
+      .input(video2Path) // Replace with actual path
       .complexFilter([
         "[0:v]scale=1080:-1[v1]",
         "[1:v]scale=-1:1920/2[v2scaled]",
@@ -107,45 +85,23 @@ app.post("/process-video", upload.single("video"), async (req, res) => {
       .on("start", (commandLine) => {
         console.log("Spawned FFmpeg with command: " + commandLine);
       })
-      .on("end", async () => {
-        try {
-          await fs.promises.unlink(video1Path);
-          console.log(`Deleted uploaded file: ${video1Path}`);
-        } catch (error) {
-          console.error(`Error deleting uploaded file: ${video1Path}`, error);
-        }
-
-        // Upload the processed video back to Google Cloud Storage
-        await bucket.upload(outputPath, {
-          destination: "output1.mp4",
-        });
-
-        try {
-          await fs.promises.unlink(outputPath);
-          console.log(`Deleted output file: ${outputPath}`);
-        } catch (error) {
-          console.error(`Error deleting output file: ${outputPath}`, error);
-        }
-
+      .on("end", () => {
+        // Delete the uploaded file after processing
+        fs.unlinkSync(videoPath);
         res.json({
           message: "Processing complete",
-          outputPath: `output1.mp4`,
+          outputPath: "videos/output1.mp4",
         });
       })
-      .on("error", async (err) => {
+      .on("error", (err) => {
         console.error("Error processing video:", err);
-        try {
-          await fs.promises.unlink(video1Path);
-          console.log(`Deleted uploaded file due to error: ${video1Path}`);
-        } catch (error) {
-          console.error(`Error deleting uploaded file: ${video1Path}`, error);
-        }
+        fs.unlinkSync(videoPath); // Ensure to delete the uploaded file in case of error
         res.status(500).json({ error: "Video processing failed" });
       })
       .save(outputPath);
   } catch (error) {
-    console.error("Error downloading video from Google Cloud Storage:", error);
-    res.status(500).json({ error: "Failed to download video" });
+    console.error("Error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 

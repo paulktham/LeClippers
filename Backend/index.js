@@ -5,6 +5,7 @@ const ffmpeg = require("fluent-ffmpeg");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const fetch = require("node-fetch");
 const app = express();
 const port = 5000;
 
@@ -17,10 +18,11 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket();
 
-const upload = multer({ dest: "uploads/" }); // Store uploaded files in the uploads directory
+// const upload = multer({ dest: "uploads/" }); // Store uploaded files in the uploads directory
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Add this line to parse URL-encoded bodies
 
 app.use("/videos", express.static(path.join(__dirname, "videos")));
 
@@ -38,13 +40,14 @@ app.post("/verifyToken", async (req, res) => {
   }
 });
 
-app.post("/process-video", upload.single("video"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+const upload = multer();
 
-    const { start, end } = req.body;
+app.post("/process-video", upload.none(), async (req, res) => {
+  try {
+    const { videoURL, start, end } = req.body;
+
+    console.log("Server side video with start:", start, "and end:", end); // Log inputs
+
     const startParts = start.split(":").map(Number);
     const endParts = end.split(":").map(Number);
 
@@ -59,15 +62,20 @@ app.post("/process-video", upload.single("video"), async (req, res) => {
         .json({ error: "End time must be greater than start time" });
     }
 
-    // Proceed with ffmpeg processing using req.file.path
-    const videoPath = req.file.path;
+    const video1Path = path.join("/tmp", "input.mp4");
+
+    // Video 1 processing
+    const video1Response = await fetch(videoURL);
+    const video1Buffer = await video1Response.buffer();
+    await fs.promises.writeFile(video1Path, video1Buffer);
+
     const video2Path = path.join(__dirname, "videos", "video2.mp4");
     const outputPath = path.join(__dirname, "videos", "output1.mp4");
 
     // Example ffmpeg command
-    ffmpeg(videoPath)
-      .inputOptions(["-ss 0", "-t 1"])
-      .input(video2Path) // Replace with actual path
+    ffmpeg(video1Path)
+      .inputOptions([`-ss ${startSeconds}`, `-t ${duration}`])
+      .input(video2Path)
       .complexFilter([
         "[0:v]scale=1080:-1[v1]",
         "[1:v]scale=-1:1920/2[v2scaled]",
@@ -87,7 +95,7 @@ app.post("/process-video", upload.single("video"), async (req, res) => {
       })
       .on("end", () => {
         // Delete the uploaded file after processing
-        fs.unlinkSync(videoPath);
+        fs.unlinkSync(video1Path);
         res.json({
           message: "Processing complete",
           outputPath: "videos/output1.mp4",
@@ -95,7 +103,7 @@ app.post("/process-video", upload.single("video"), async (req, res) => {
       })
       .on("error", (err) => {
         console.error("Error processing video:", err);
-        fs.unlinkSync(videoPath); // Ensure to delete the uploaded file in case of error
+        fs.unlinkSync(video1Path); // Ensure to delete the uploaded file in case of error
         res.status(500).json({ error: "Video processing failed" });
       })
       .save(outputPath);

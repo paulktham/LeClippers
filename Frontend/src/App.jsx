@@ -4,8 +4,9 @@ import Home from "./pages/Home";
 import Download from "./pages/Download";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import { db } from "./firebase/firebase";
+import { db, storage } from "./firebase/firebase";
 import { getDoc, doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from "./context/authContext";
 import "./App.css";
 
@@ -36,16 +37,22 @@ const App = () => {
 
   const handleSubmission = async () => {
     if (file) {
+      const storageRef = ref(storage, `${currentUser.uid}/${file.name}`);
+      await uploadBytes(storageRef, file);
+      const videoURL = await getDownloadURL(storageRef);
+
       const { start, end } = inputs[0];
+      console.log("Submitting video with start:", start, "and end:", end); // Log inputs
+
       const formData = new FormData();
-      formData.append("video", file); // Append the video file
+      formData.append("videoURL", videoURL);
       formData.append("start", start);
       formData.append("end", end);
 
       try {
         const response = await fetch("http://localhost:5000/process-video", {
           method: "POST",
-          body: formData, // Send formData
+          body: formData,
         });
         const data = await response.json();
         if (response.ok) {

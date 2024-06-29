@@ -66,7 +66,7 @@ app.post("/process-video", upload.single("video"), async (req, res) => {
 
     // Example ffmpeg command
     ffmpeg(videoPath)
-      .inputOptions(["-ss 0", "-t 1"])
+      .inputOptions([`-ss ${startSeconds}`, `-t ${duration}`])
       .input(video2Path) // Replace with actual path
       .complexFilter([
         "[0:v]scale=1080:-1[v1]",

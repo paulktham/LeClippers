@@ -6,7 +6,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { db, storage } from "./firebase/firebase";
 import { getDoc, doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import { useAuth } from "./context/authContext";
 import "./App.css";
 
@@ -48,6 +53,7 @@ const App = () => {
       formData.append("videoURL", videoURL);
       formData.append("start", start);
       formData.append("end", end);
+      formData.append("uid", currentUser.uid);
 
       try {
         const response = await fetch("http://localhost:5000/process-video", {
@@ -65,7 +71,13 @@ const App = () => {
           );
           setCredits(updatedCredits);
           setInputs([{ start: "", end: "" }]);
-          navigate("/download", { state: { videoUrl: data.outputPath } });
+
+          // Delete the uploaded file from Firebase Storage
+          await deleteObject(storageRef);
+
+          navigate("/download", {
+            state: { videoUrl: data.outputPath, uid: currentUser.uid },
+          });
         } else {
           console.error("Video processing failed:", data.error);
         }

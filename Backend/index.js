@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
 const fetch = require("node-fetch");
+const os = require("os"); // Import the os module
 const app = express();
 const port = 5000;
 
@@ -17,8 +18,6 @@ admin.initializeApp({
 });
 
 const bucket = admin.storage().bucket();
-
-// const upload = multer({ dest: "uploads/" }); // Store uploaded files in the uploads directory
 
 app.use(cors());
 app.use(express.json());
@@ -44,7 +43,7 @@ const upload = multer();
 
 app.post("/process-video", upload.none(), async (req, res) => {
   try {
-    const { videoURL, start, end } = req.body;
+    const { videoURL, start, end, uid } = req.body;
 
     console.log("Server side video with start:", start, "and end:", end); // Log inputs
 
@@ -62,7 +61,8 @@ app.post("/process-video", upload.none(), async (req, res) => {
         .json({ error: "End time must be greater than start time" });
     }
 
-    const video1Path = path.join("/tmp", "input.mp4");
+    const tempDir = os.tmpdir(); // Get the OS-specific temporary directory
+    const video1Path = path.join(tempDir, "input.mp4");
 
     // Video 1 processing
     const video1Response = await fetch(videoURL);
@@ -70,7 +70,7 @@ app.post("/process-video", upload.none(), async (req, res) => {
     await fs.promises.writeFile(video1Path, video1Buffer);
 
     const video2Path = path.join(__dirname, "videos", "video2.mp4");
-    const outputPath = path.join(__dirname, "videos", "output1.mp4");
+    const outputPath = path.join(tempDir, "output1.mp4");
 
     // Example ffmpeg command
     ffmpeg(video1Path)
@@ -93,13 +93,24 @@ app.post("/process-video", upload.none(), async (req, res) => {
       .on("start", (commandLine) => {
         console.log("Spawned FFmpeg with command: " + commandLine);
       })
-      .on("end", () => {
-        // Delete the uploaded file after processing
-        fs.unlinkSync(video1Path);
-        res.json({
-          message: "Processing complete",
-          outputPath: "videos/output1.mp4",
-        });
+      .on("end", async () => {
+        try {
+          // Upload the output file to Firebase Storage
+          const destination = `${uid}.output.mp4`;
+          await bucket.upload(outputPath, { destination });
+
+          // Clean up temporary files
+          fs.unlinkSync(video1Path);
+          fs.unlinkSync(outputPath);
+
+          res.json({
+            message: "Processing complete",
+            outputPath: destination,
+          });
+        } catch (error) {
+          console.error("Error uploading to Firebase:", error);
+          res.status(500).json({ error: "Failed to upload video to Firebase" });
+        }
       })
       .on("error", (err) => {
         console.error("Error processing video:", err);

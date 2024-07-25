@@ -85,30 +85,18 @@ app.post(
 
       const duration = endSeconds - startSeconds;
 
-<<<<<<< HEAD
       if (duration <= 0) {
         return res
           .status(400)
           .json({ error: "End time must be greater than start time" });
       }
-=======
-    if (duration <= 0) {
-      return res.status(400).json({ error: "End time must be greater than start time" });
-    }
->>>>>>> a1e2d607d1231a2a89e2016d37788e57ff00bee1
 
       const tempDir = os.tmpdir();
       const video1Path = path.join(tempDir, "input.mp4");
 
-<<<<<<< HEAD
       const video1Response = await fetch(videoURL);
       const video1Buffer = await video1Response.buffer();
       await fs.promises.writeFile(video1Path, video1Buffer);
-=======
-    const video1Response = await axios.get(videoURL, { responseType: 'arraybuffer' });
-    const video1Buffer = video1Response.data;
-    await fs.promises.writeFile(video1Path, video1Buffer);
->>>>>>> a1e2d607d1231a2a89e2016d37788e57ff00bee1
 
       const video2Path = path.join(__dirname, "videos", "video2.mp4");
       const outputPath = path.join(tempDir, "output1.mp4");

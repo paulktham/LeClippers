@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const admin = require("firebase-admin");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const ffmpeg = require("fluent-ffmpeg");
@@ -7,7 +6,7 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 const os = require("os");
-const fetch = require("node-fetch");
+const axios = require("axios");
 const serviceAccount = require("./assets/leclippers1-firebase-adminsdk-7l1br-c93d999ed1.json");
 
 // CORS function
@@ -39,10 +38,27 @@ if (!admin.apps.length) {
 }
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 
+<<<<<<< HEAD
 // Removed the old CORS middleware
 // function setCorsHeaders(req, res, next) { ... }
+=======
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  // another common pattern
+  // res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  next();
+});
+>>>>>>> a1e2d607d1231a2a89e2016d37788e57ff00bee1
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -89,18 +105,30 @@ app.post(
 
       const duration = endSeconds - startSeconds;
 
+<<<<<<< HEAD
       if (duration <= 0) {
         return res
           .status(400)
           .json({ error: "End time must be greater than start time" });
       }
+=======
+    if (duration <= 0) {
+      return res.status(400).json({ error: "End time must be greater than start time" });
+    }
+>>>>>>> a1e2d607d1231a2a89e2016d37788e57ff00bee1
 
       const tempDir = os.tmpdir();
       const video1Path = path.join(tempDir, "input.mp4");
 
+<<<<<<< HEAD
       const video1Response = await fetch(videoURL);
       const video1Buffer = await video1Response.buffer();
       await fs.promises.writeFile(video1Path, video1Buffer);
+=======
+    const video1Response = await axios.get(videoURL, { responseType: 'arraybuffer' });
+    const video1Buffer = video1Response.data;
+    await fs.promises.writeFile(video1Path, video1Buffer);
+>>>>>>> a1e2d607d1231a2a89e2016d37788e57ff00bee1
 
       const video2Path = path.join(__dirname, "videos", "video2.mp4");
       const outputPath = path.join(tempDir, "output1.mp4");

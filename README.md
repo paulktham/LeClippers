@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-# LECLIPPERSTEST
-pls host
-
-=======
->>>>>>> bb3a125bac6fc67801b612eb9af7eb51b06c60ae
 # LeClippers
+
 Orbital Project (2024 Summer)
 Done by Ryan Lim and Paul Tham
 

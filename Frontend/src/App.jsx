@@ -43,7 +43,7 @@ const App = () => {
       formData.append("end", end);
 
       try {
-        const response = await fetch("http://localhost:5000/process-video", {
+        const response = await fetch("http://localhost:5001/process-video", {
           method: "POST",
           body: formData, // Send formData
         });

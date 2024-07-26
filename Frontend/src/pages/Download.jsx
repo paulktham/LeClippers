@@ -13,7 +13,7 @@ const Download = () => {
     }
 
     const link = document.createElement("a"); // Create a link element
-    link.href = `http://localhost:5000/${videoUrl}`;
+    link.href = `http://localhost:5001/${videoUrl}`;
     link.download = "processed_video.mp4"; // Set the file name
     document.body.appendChild(link); // Append the link to the document body
     link.click(); // Programmatically click the link to trigger the download
@@ -32,7 +32,7 @@ const Download = () => {
         <div>
           <video controls>
             <source
-              src={`http://localhost:5000/${videoUrl}`}
+              src={`http://localhost:5001/${videoUrl}`}
               type="video/mp4"
             />
             Your browser does not support the video tag.
